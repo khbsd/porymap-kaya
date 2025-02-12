@@ -1722,8 +1722,12 @@ bool Project::readWildMonData() {
     for (OrderedJson subObjectRef : wildMonObj["wild_encounter_groups"].array_items()) {
         OrderedJson::object subObject = subObjectRef.object_items();
         if (!subObject["for_maps"].bool_value()) {
-            this->extraEncounterGroups.push_back(subObject);
+            this->extraEncounterGroups.push_back(subObject);//
             continue;
+        }
+        
+        if (subObject["use_encounter_group_array"].bool_value()) {
+            logWarn(QString("will use encounter group arrays"));
         }
 
         for (const OrderedJson &field : subObject["fields"].array_items()) {
@@ -1748,7 +1752,7 @@ bool Project::readWildMonData() {
             this->wildMonFields.append(encounterField);
         }
 
-        auto encounters = subObject["encounters"].array_items();
+        auto encounters = subObject["encounters"].array_items();//
         for (const auto &encounter : encounters) {
             OrderedJson::object encounterObj = encounter.object_items();
             QString mapConstant = encounterObj["map"].string_value();
@@ -1760,7 +1764,7 @@ bool Project::readWildMonData() {
                 if (!encounterObj[field].is_null()) {
                     OrderedJson::object encounterFieldObj = encounterObj[field].object_items();
                     header.wildMons[field].active = true;
-                    header.wildMons[field].encounterRate = encounterFieldObj["encounter_rate"].int_value();
+                    header.wildMons[field].encounterRate = encounterFieldObj["encounter_rate"].int_value();//
                     encounterRateFrequencyMaps[field][header.wildMons[field].encounterRate]++;
                     for (auto mon : encounterFieldObj["mons"].array_items()) {
                         WildPokemon newMon;
