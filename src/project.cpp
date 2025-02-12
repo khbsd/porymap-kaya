@@ -102,8 +102,8 @@ bool Project::load() {
                 && readObjEventGfxConstants()
                 && readEventGraphics()
                 && readSongNames()
-                && readMapGroups()
-                && readHealLocations();
+                && readMapGroups();
+                // && readHealLocations();
 
     if (success) {
         // No need to do this if something failed to load.
