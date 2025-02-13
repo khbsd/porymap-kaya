@@ -78,6 +78,7 @@ public:
     int pokemonMinLevel;
     int pokemonMaxLevel;
     int maxEncounterRate;
+    bool usingGroupArrays;
     bool wildEncountersLoaded;
 
     void set_root(QString);
