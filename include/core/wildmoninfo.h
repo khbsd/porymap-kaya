@@ -25,6 +25,11 @@ struct WildPokemonHeader {
     tsl::ordered_map<QString, WildMonInfo> wildMons;
 };
 
+struct WildMonHeaderArray {
+    QString arrayLabel;
+    tsl::ordered_map<QString, QVector<WildPokemonHeader>> monsArray;
+};
+
 struct EncounterField {
     QString name; // Ex: "fishing_mons"
     QVector<int> encounterRates;

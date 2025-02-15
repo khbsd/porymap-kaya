@@ -1673,7 +1673,6 @@ bool Project::readWildMonData() {
                 QList<QString> subGroups;
                 for (auto groupPair : fieldObj["groups"].object_items()) {
                     subGroups.append(groupPair.first);
-                    logInfo(QString("hello! from groups"));
                 }
 
                 for (QString group : subGroups) {
@@ -1691,11 +1690,17 @@ bool Project::readWildMonData() {
                 QString mapConstant = encounterGroup["map"].string_value();
                 //logInfo(QString("hello! from encounter map %1").arg(encounterGroup["map"].string_value()));
 
-                auto encounterArrayItems = encounterGroup["encounter_array"].array_items();
-                for (const auto &encounter : encounterArrayItems) {
-                    logInfo(QString("hello from encounterArrayItems"));
-                    OrderedJson::object encounterObj = encounter.object_items();
-
+                // OrderedJson::object encounterGroupArrays = encounterGroup["encounter_array"].object_items();
+                auto encounterGroupArrays = encounterGroup["encounter_array"].array_items();
+                QList<QString> arrayGroups;
+                for (QString arrayGroup : encounterGroup["encounter_array"].array_items()) {
+                    OrderedJson::object arraysObj = encounterGroup
+                    arrayGroups.append(arrayGroup.first);
+                    logInfo(arrayGroup.first);
+                }
+                for (const auto &encounterArray : encounterGroupArrays) {
+                    OrderedJson::object encounterObj = encounterArray.object_items();
+                    logInfo(QString("beep"));
                     WildPokemonHeader header;
 
                     for (const EncounterField &monField : this->wildMonFields) {
