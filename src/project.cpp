@@ -1706,20 +1706,18 @@ bool Project::readWildMonData() {
                         OrderedJson::object encArrayObj = arrayObj.second.object_items();
                         QString headerLabel = arrayObj.first;
 
-                        logInfo(QString("%1 has type %2").arg(headerLabel).arg(typeid(encArrayObj).name()));
+                        //logInfo(QString("%1 has type %2").arg(headerLabel).arg(typeid(encArrayObj).name()));
                         
                         WildPokemonHeader header;
-
                         // Check for each possible encounter type using the encounter types we grabbed a couple of blocks up
-                        /*for (const EncounterField &monField : this->wildMonFields) {
+                        for (const EncounterField &monField : this->wildMonFields) {
                             const QString field = monField.name;
-                             
-                            if (encArrayObj[field].is_null()) {
-                                // Encounter type isn't present
-                                continue;
-                            }
+                        
                             // if the field exists, use it to reference the keys for the objects in each encounterObj
                             OrderedJson::object encounterFieldObj = encArrayObj[field].object_items();
+
+                            if (!arrayObjJson[headerLabel].is_null())
+                                logInfo(QString("%1, %2").arg(field).arg(encounterObj["base_label"].string_value()));
 
                             WildMonInfo monInfo;
                             monInfo.active = true;
@@ -1744,7 +1742,7 @@ bool Project::readWildMonData() {
                                 monInfo.wildPokemon.append(WildPokemon());
                             }
                             header.wildMons[field] = monInfo;
-                        }*/
+                        }
 
                         const QString mapConstant = encounterObj["map"].string_value();
                         const QString baseLabel = encounterObj["base_label"].string_value();
