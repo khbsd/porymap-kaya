@@ -1697,16 +1697,12 @@ bool Project::readWildMonData() {
             for (const auto &encounterJson : mainArrayObject["encounters"].array_items()) {
                 OrderedJson::object encounterObj = encounterJson.object_items();
 
-                //logInfo(QString("hello from the new code block!"));
-
                 // need to grab the names of each encounter group array object
                 WildMonHeaderArray headerArray;
                 for (const auto &arrayObjJson : encounterObj["encounter_array"].array_items()) {
                     for (const auto &arrayObj : arrayObjJson.object_items()) {
-                        OrderedJson::object encArrayObj = arrayObj.second.object_items();
+                        //OrderedJson::object encArrayObj = arrayObj.second.object_items();
                         QString headerLabel = arrayObj.first;
-
-                        //logInfo(QString("%1 has type %2").arg(headerLabel).arg(typeid(encArrayObj).name()));
                         
                         WildPokemonHeader header;
                         // Check for each possible encounter type using the encounter types we grabbed a couple of blocks up
@@ -1714,20 +1710,36 @@ bool Project::readWildMonData() {
                             const QString field = monField.name;
                         
                             // if the field exists, use it to reference the keys for the objects in each encounterObj
-                            OrderedJson::object encounterFieldObj = encArrayObj[field].object_items();
+                            OrderedJson::object encounterFieldObj = arrayObjJson.object_items();
 
-                            if (!arrayObjJson[headerLabel].is_null())
-                                logInfo(QString("%1, %2").arg(field).arg(encounterObj["base_label"].string_value()));
+                            if (!encounterFieldObj[headerLabel].is_null()) {
+                                for (const auto &encObj : encounterFieldObj[headerLabel].array_items()) {
+                                    if (!encObj[field]["mons"].is_null()) {
+                                        // logInfo(QString("beep"));
+                                        // OrderedJson::object monObjJson = encObj[field]["mons"].object_items();
+                                        // OrderedJson::object monObjNew = monObjJson.object_items();
+                                        // logInfo(QString(encObj[field]["mons"]["encounter_rate"].int_value()));
+
+                                        for (auto monJsonNew : encObj[field]["mons"].object_items()) {
+                                            OrderedJson::object testObjJson = monJsonNew.second.object_items();
+                                            logInfo(QString(monJsonNew.first));
+                                        }
+                                    }
+                                    
+                                }
+                                // logInfo(QString(encounterFieldObj[field].string_value()));
+                            }
 
                             WildMonInfo monInfo;
                             monInfo.active = true;
 
                             // Read encounter rate
-                            monInfo.encounterRate = encounterFieldObj["encounter_rate"].int_value();
+                            monInfo.encounterRate = encounterFieldObj[field]["encounter_rate"].int_value();
+                            // logInfo(QString(monInfo.encounterRate));
                             encounterRateFrequencyMaps[field][monInfo.encounterRate]++;
 
                             // Read wild pokémon list
-                            for (auto monJson : encounterFieldObj["mons"].array_items()) {
+                            for (auto monJson : encounterFieldObj[field]["mons"].array_items()) {
                                 OrderedJson::object monObj = monJson.object_items();
 
                                 WildPokemon newMon;
@@ -1742,6 +1754,7 @@ bool Project::readWildMonData() {
                                 monInfo.wildPokemon.append(WildPokemon());
                             }
                             header.wildMons[field] = monInfo;
+                            
                         }
 
                         const QString mapConstant = encounterObj["map"].string_value();
