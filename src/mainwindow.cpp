@@ -69,6 +69,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QCoreApplication::setApplicationVersion(PORYMAP_VERSION);
     QApplication::setApplicationDisplayName(QApplication::applicationName());
     QApplication::setWindowIcon(QIcon(":/icons/porymap-icon-2.ico"));
+    connect(qApp, &QApplication::applicationStateChanged, this, &MainWindow::showFileWatcherWarning);
+
     ui->setupUi(this);
 
     cleanupLargeLog();
@@ -523,16 +525,10 @@ void MainWindow::loadUserSettings() {
     ui->actionCursor_Tile_Outline->setChecked(porymapConfig.showCursorTile);
     this->editor->settings->cursorTileRectEnabled = porymapConfig.showCursorTile;
 
-    // Border
-    ui->checkBox_ToggleBorder->setChecked(porymapConfig.showBorder);
-
     // Grid
     const QSignalBlocker b_Grid(ui->checkBox_ToggleGrid);
     ui->actionShow_Grid->setChecked(porymapConfig.showGrid);
     ui->checkBox_ToggleGrid->setChecked(porymapConfig.showGrid);
-
-    // Mirror connections
-    ui->checkBox_MirrorConnections->setChecked(porymapConfig.mirrorConnectingMaps);
 
     // Collision opacity/transparency
     const QSignalBlocker b_CollisionTransparency(ui->horizontalSlider_CollisionTransparency);
@@ -552,6 +548,10 @@ void MainWindow::loadUserSettings() {
     const QSignalBlocker b_CollisionZoom(ui->horizontalSlider_CollisionZoom);
     ui->horizontalSlider_MetatileZoom->setValue(porymapConfig.metatilesZoom);
     ui->horizontalSlider_CollisionZoom->setValue(porymapConfig.collisionZoom);
+
+    ui->checkBox_MirrorConnections->setChecked(porymapConfig.mirrorConnectingMaps);
+    ui->checkBox_ToggleBorder->setChecked(porymapConfig.showBorder);
+    ui->actionShow_Events_In_Map_View->setChecked(porymapConfig.eventOverlayEnabled);
 
     setTheme(porymapConfig.theme);
     setDivingMapsVisible(porymapConfig.showDiveEmergeMaps);
@@ -791,26 +791,46 @@ void MainWindow::openSubWindow(QWidget * window) {
     }
 }
 
-void MainWindow::showFileWatcherWarning(QString filepath) {
-    if (!porymapConfig.monitorFiles || !isProjectOpen())
+void MainWindow::showFileWatcherWarning() {
+     if (!porymapConfig.monitorFiles || !isProjectOpen())
+        return;
+
+    // Only show the file watcher warning if Porymap is the currently active application.
+    // This stops Porymap from bugging users when they switch to their projects to make edits;
+    // we'll warn them about the need to reload when they return to Porymap.
+    if (QGuiApplication::applicationState() != Qt::ApplicationActive)
         return;
 
     Project *project = this->editor->project;
-    if (project->modifiedFileTimestamps.contains(filepath)) {
-        if (QDateTime::currentMSecsSinceEpoch() < project->modifiedFileTimestamps[filepath]) {
-            return;
-        }
-        project->modifiedFileTimestamps.remove(filepath);
+    QStringList modifiedFiles(project->modifiedFiles.constBegin(),  project->modifiedFiles.constEnd());
+    if (modifiedFiles.isEmpty())
+        return;
+    project->modifiedFiles.clear();
+
+    // Only allow one of these warnings at a single time.
+    // Additional file changes are ignored while the warning is already active. 
+    static bool showing = false;
+    if (showing)
+        return;
+    showing = true;
+
+    // Strip project root from filepaths
+    const QString root = project->root + "/";
+    for (auto &path : modifiedFiles) {
+        path.remove(root);
     }
 
-    static bool showing = false;
-    if (showing) return;
+    QuestionMessage msgBox("", this);
+    if (modifiedFiles.count() == 1) {
+        msgBox.setText(QString("The file %1 has changed on disk. Would you like to reload the project?").arg(modifiedFiles.first()));
+    } else {
+        msgBox.setText(QStringLiteral("Some project files have changed on disk. Would you like to reload the project?"));
+        msgBox.setDetailedText(QStringLiteral("The following files have changed:\n") + modifiedFiles.join("\n"));
+    }
 
-    QuestionMessage msgBox(QString("The file %1 has changed on disk. Would you like to reload the project?").arg(filepath.remove(project->root + "/")), this);
     QCheckBox showAgainCheck("Do not ask again.");
     msgBox.setCheckBox(&showAgainCheck);
 
-    showing = true;
     auto reply = msgBox.exec();
     if (reply == QMessageBox::Yes) {
         on_action_Reload_Project_triggered();
@@ -1765,14 +1785,20 @@ void MainWindow::on_mapViewTab_tabBarClicked(int index)
     if (index != oldIndex)
         Scripting::cb_MapViewTabChanged(oldIndex, index);
 
+    static const QMap<int, Editor::EditMode> tabIndexToEditMode = {
+        {MapViewTab::Metatiles, Editor::EditMode::Metatiles},
+        {MapViewTab::Collision, Editor::EditMode::Collision},
+        {MapViewTab::Prefabs,   Editor::EditMode::Metatiles},
+    };
+    if (tabIndexToEditMode.contains(index)) {
+        editor->setEditMode(tabIndexToEditMode.value(index));
+    }
+
     if (index == MapViewTab::Metatiles) {
-        editor->setEditingMetatiles();
         refreshMetatileViews();
     } else if (index == MapViewTab::Collision) {
-        editor->setEditingCollision();
         refreshCollisionSelector();
     } else if (index == MapViewTab::Prefabs) {
-        editor->setEditingMetatiles();
         if (projectConfig.prefabFilepath.isEmpty() && !projectConfig.prefabImportPrompted) {
             // User hasn't set up prefabs and hasn't been prompted before.
             // Ask if they'd like to import the default prefabs file.
@@ -1799,19 +1825,26 @@ void MainWindow::on_mainTabBar_tabBarClicked(int index)
     };
     ui->mainStackedWidget->setCurrentIndex(tabIndexToStackIndex.value(index));
 
+    static const QMap<int, Editor::EditMode> tabIndexToEditMode = {
+        // MainTab::Map itself has no edit mode, depends on mapViewTab.
+        {MainTab::Events,      Editor::EditMode::Events},
+        {MainTab::Header,      Editor::EditMode::Header},
+        {MainTab::Connections, Editor::EditMode::Connections},
+        {MainTab::WildPokemon, Editor::EditMode::Encounters},
+    };
+    if (tabIndexToEditMode.contains(index)) {
+        editor->setEditMode(tabIndexToEditMode.value(index));
+    }
+
     if (index == MainTab::Map) {
         ui->stackedWidget_MapEvents->setCurrentIndex(0);
         on_mapViewTab_tabBarClicked(ui->mapViewTab->currentIndex());
         clickToolButtonFromEditAction(editor->mapEditAction);
     } else if (index == MainTab::Events) {
         ui->stackedWidget_MapEvents->setCurrentIndex(1);
-        editor->setEditingEvents();
         clickToolButtonFromEditAction(editor->eventEditAction);
     } else if (index == MainTab::Connections) {
-        editor->setEditingConnections();
         ui->graphicsView_Connections->setFocus(); // Avoid opening tab with focus on something editable
-    } else if (index == MainTab::WildPokemon) {
-        editor->setEditingEncounters();
     }
 
     if (!editor->map) return;
@@ -1859,6 +1892,11 @@ void MainWindow::on_actionCursor_Tile_Outline_triggered()
         this->editor->cursorMapTileRect->setVisible(enabled && this->editor->cursorMapTileRect->getActive());
         ui->graphicsView_Map->scene()->update();
     }
+}
+
+void MainWindow::on_actionShow_Events_In_Map_View_triggered() {
+    porymapConfig.eventOverlayEnabled = ui->actionShow_Events_In_Map_View->isChecked();
+    this->editor->redrawAllEvents();
 }
 
 void MainWindow::on_actionShow_Grid_triggered() {
