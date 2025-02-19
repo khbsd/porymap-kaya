@@ -23,6 +23,7 @@
 #include <QRegularExpression>
 #include <algorithm>
 
+#include <cstddef>
 #include <typeinfo>
 
 int Project::num_tiles_primary = 512;
@@ -1701,55 +1702,57 @@ bool Project::readWildMonData() {
                 WildMonHeaderArray headerArray;
                 for (const auto &arrayObjJson : encounterObj["encounter_array"].array_items()) {
                     for (const auto &arrayObj : arrayObjJson.object_items()) {
-                        //OrderedJson::object encArrayObj = arrayObj.second.object_items();
-                        QString headerLabel = arrayObj.first;
-                        // logInfo(headerLabel);
-
-                        if (headerLabel != "time_day") {
-                            continue;
-                        }
-                        
                         WildPokemonHeader header;
-                        // Check for each possible encounter type using the encounter types we grabbed a couple of blocks up
-                        for (const EncounterField &monField : this->wildMonFields) {
-                            const QString field = monField.name;
+
+                        QString headerLabel = arrayObj.first;
+                    }
+                    // if the field exists, use it to reference the keys for the objects in each encounterObj
+                    OrderedJson::object encounterFieldObj = arrayObjJson[headerLabel].object_items();
+                    // logInfo(headerLabel);
+
+                    // Check for each possible encounter type using the encounter types we grabbed a couple of blocks up
+                    for (const EncounterField &monField : this->wildMonFields) {
+                        const QString field = monField.name;
+                        // logInfo(field);
+
+                        for (const auto &encFieldJson : arrayObjJson[headerLabel].array_items()) {
+                            OrderedJson::object fieldObj = encFieldJson.object_items();
                         
-                            // if the field exists, use it to reference the keys for the objects in each encounterObj
-                            OrderedJson::object encounterFieldObj = arrayObjJson.object_items();
-                            for (const auto &encObj : encounterFieldObj[headerLabel].array_items()) {
-                                OrderedJson::object fieldTypeObj = encObj[field].object_items();
-                            
-                                WildMonInfo monInfo;
-                                monInfo.active = true;
+                            WildMonInfo monInfo;
+                            monInfo.active = true;
 
-                                // Read encounter rate
-                                monInfo.encounterRate = fieldTypeObj["encounter_rate"].int_value();
-                                //logInfo(QString("%1").arg(monInfo.encounterRate));
-                                encounterRateFrequencyMaps[field][monInfo.encounterRate]++;
+                            // Read encounter rate
+                            monInfo.encounterRate = fieldObj["encounter_rate"].int_value();
+                            logInfo(QString("%1").arg(monInfo.encounterRate));
+                            encounterRateFrequencyMaps[field][monInfo.encounterRate]++;
 
-                                // Read wild pokémon list
-                                for (auto monJson : fieldTypeObj["mons"].array_items()) {
-                                    OrderedJson::object monObj = monJson.object_items();
-                                    //logInfo(monObj["species"].string_value());
-
-                                    WildPokemon newMon;
-                                    newMon.minLevel = monObj["min_level"].int_value();
-                                    newMon.maxLevel = monObj["max_level"].int_value();
-                                    newMon.species = monObj["species"].string_value();
-                                    monInfo.wildPokemon.append(newMon);
+                            // Read wild pokémon list
+                            for (const auto &monJson : fieldObj["mons"].array_items()) {
+                                OrderedJson::object monObj = monJson.object_items();
+                                if (!monObj.empty()) {
+                                    continue;
                                 }
 
-                                // If the user supplied too few pokémon for this group then we fill in the rest with default values.
-                                for (int i = monInfo.wildPokemon.length(); i < monField.encounterRates.length(); i++) {
-                                    monInfo.wildPokemon.append(WildPokemon());
-                                }
-                                header.wildMons[field] = monInfo;
+                                WildPokemon newMon;
+                                newMon.minLevel = monObj["min_level"].int_value();
+                                newMon.maxLevel = monObj["max_level"].int_value();
+                                newMon.species = monObj["species"].string_value();
+                                monInfo.wildPokemon.append(newMon);
+
+                                logInfo(newMon.species);
                             }
+
+                            // If the user supplied too few pokémon for this group then we fill in the rest with default values.
+                            for (int i = monInfo.wildPokemon.length(); i < monField.encounterRates.length(); i++) {
+                                monInfo.wildPokemon.append(WildPokemon());
+                            }
+                            header.wildMons[field] = monInfo;
+
+                            const QString mapConstant = encounterObj["map"].string_value();
+                            const QString baseLabel = encounterObj["base_label"].string_value();
+                            this->wildMonData[mapConstant].insert({baseLabel, header});
+                            this->encounterGroupLabels.append(baseLabel);
                         }
-                        const QString mapConstant = encounterObj["map"].string_value();
-                        const QString baseLabel = encounterObj["base_label"].string_value();
-                        this->wildMonData[mapConstant].insert({baseLabel, header});
-                        this->encounterGroupLabels.append(baseLabel);
                     }
                 }
             }
