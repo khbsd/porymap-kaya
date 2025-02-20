@@ -1715,16 +1715,30 @@ bool Project::readWildMonData() {
         if (this->usingGroupArrays) {
             for (const auto &encounterJson : mainArrayObject["encounters"].array_items()) {
                 OrderedJson::object encounterObj = encounterJson.object_items();
-                logInfo(encounterObj["base_label"].string_value());
-
                 WildPokemonHeader header;
+
+                logInfo(QString("[MAP LABEL] %1").arg(encounterObj["base_label"].string_value())); // tempLogs
+
                 for (const auto &encArrayJson : encounterObj["encounter_array"].array_items()) {
                     OrderedJson::object encArrayObj = encArrayJson.object_items();
-                    // Check for each possible encounter type using the encounter types we grabbed a couple of blocks up
-                    //logInfo(encArrayJson.first);
-                    for (const auto &encFieldJson : encArrayObj["time_day"].array_items()) {
+
+                    // This is the iterator that basically counts to 1 and then stops,
+                    // but it's still useful to grab the key.
+                    tsl::ordered_map<QString, poryjson::Json>::iterator iter;
+
+                    // Extract the key from the encArrayJson data.
+                    // As far as I know, this is the best way to get the key,
+                    // even if there's only one item in the object.
+                    QString headerLabel;
+                    for (iter = encArrayObj.begin(); iter != encArrayObj.end(); iter++) 
+                        headerLabel = iter->first;
+
+                    logInfo(QString("[ENCOUNTER GROUP] %1").arg(headerLabel)); // tempLogs
+                    
+                    for (const auto &encFieldJson : encArrayObj[headerLabel].array_items()) {
                         OrderedJson::object encFieldObj = encFieldJson.object_items();
 
+                        // Check for each possible encounter type using the encounter types we grabbed earlier
                         for (const EncounterField &monField : this->wildMonFields) {
                             const QString field = monField.name;
 
@@ -1733,7 +1747,7 @@ bool Project::readWildMonData() {
                                 continue;
                             }
                             // if the field exists, use it to reference the keys for the objects in each encounterObj
-                            logInfo(field);
+                            logInfo(QString("[ENCOUNTER FIELD TYPE] %1").arg(field)); // tempLogs
                             OrderedJson::object encounterFieldObj = encFieldObj[field].object_items();
 
                             WildMonInfo monInfo;
@@ -1751,7 +1765,7 @@ bool Project::readWildMonData() {
                                 newMon.minLevel = monObj["min_level"].int_value();
                                 newMon.maxLevel = monObj["max_level"].int_value();
                                 newMon.species = monObj["species"].string_value();
-                                logInfo(monObj["species"].string_value());
+                                logInfo(QString("[SPECIES] %1").arg(monObj["species"].string_value())); // tempLogs
                                 monInfo.wildPokemon.append(newMon);
                             }
 
