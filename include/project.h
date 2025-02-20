@@ -1,4 +1,5 @@
 #pragma once
+#include "core/wildmoninfo.h"
 #ifndef PROJECT_H
 #define PROJECT_H
 
@@ -139,6 +140,7 @@ public:
 
     bool readWildMonData();
     tsl::ordered_map<QString, tsl::ordered_map<QString, WildPokemonHeader>> wildMonData;
+    tsl::ordered_map<QString, tsl::ordered_map<QString, WildMonHeaderArrayMap>> wildMonDataArrayMap;
 
     QVector<EncounterField> wildMonFields;
     QVector<QString> encounterGroupLabels;

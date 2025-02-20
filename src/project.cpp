@@ -1715,6 +1715,7 @@ bool Project::readWildMonData() {
         if (this->usingGroupArrays) {
             for (const auto &encounterJson : mainArrayObject["encounters"].array_items()) {
                 OrderedJson::object encounterObj = encounterJson.object_items();
+                WildMonHeaderArrayMap headerArrayMap;
                 WildPokemonHeader header;
 
                 logInfo(QString("[MAP LABEL] %1").arg(encounterObj["base_label"].string_value())); // tempLogs
@@ -1722,7 +1723,7 @@ bool Project::readWildMonData() {
                 for (const auto &encArrayJson : encounterObj["encounter_array"].array_items()) {
                     OrderedJson::object encArrayObj = encArrayJson.object_items();
 
-                    // This is the iterator that basically counts to 1 and then stops,
+                    // This is an iterator that basically counts to 1 and then stops,
                     // but it's still useful to grab the key.
                     tsl::ordered_map<QString, poryjson::Json>::iterator iter;
 
@@ -1737,6 +1738,9 @@ bool Project::readWildMonData() {
                     
                     for (const auto &encFieldJson : encArrayObj[headerLabel].array_items()) {
                         OrderedJson::object encFieldObj = encFieldJson.object_items();
+
+                        WildPokemonHeader newHeader;
+                        headerArrayMap.insert({ headerLabel, newHeader });
 
                         // Check for each possible encounter type using the encounter types we grabbed earlier
                         for (const EncounterField &monField : this->wildMonFields) {
@@ -1774,12 +1778,14 @@ bool Project::readWildMonData() {
                                 monInfo.wildPokemon.append(WildPokemon());
                             }
                             header.wildMons[field] = monInfo;
+                            headerArrayMap[headerLabel].wildMons[field] = monInfo;
                         }
                     }
                 }
                 const QString mapConstant = encounterObj["map"].string_value();
                 const QString baseLabel = encounterObj["base_label"].string_value();
                 this->wildMonData[mapConstant].insert({baseLabel, header});
+                this->wildMonDataArrayMap[mapConstant].insert({baseLabel, headerArrayMap});
                 this->encounterGroupLabels.append(baseLabel);
             }
         } else {

@@ -200,24 +200,26 @@ void Editor::clearWildMonTables() {
 void Editor::displayWildMonTables() {
     clearWildMonTables();
 
+    auto wildMonDataCurrent = project->usingGroupArrays ? project->wildMonDataArrayMap : project->wildMonData;
+
     // Don't try to read encounter data if it doesn't exist on disk for this map.
-    if (!project->wildMonData.contains(map->constantName())) {
+    if (!wildMonDataCurrent.contains(map->constantName())) {
         return;
     }
 
     QComboBox *labelCombo = ui->comboBox_EncounterGroupLabel;
-    for (auto groupPair : project->wildMonData[map->constantName()])
+    for (auto groupPair : wildMonDataCurrent[map->constantName()])
         labelCombo->addItem(groupPair.first);
 
     labelCombo->setCurrentText(labelCombo->itemText(0));
 
     QStackedWidget *stack = ui->stackedWidget_WildMons;
     int labelIndex = 0;
-    for (auto labelPair : project->wildMonData[map->constantName()]) {
+    for (auto labelPair : wildMonDataCurrent[map->constantName()]) {
 
         QString label = labelPair.first;
 
-        WildPokemonHeader header = project->wildMonData[map->constantName()][label];
+        WildPokemonHeader header = wildMonDataCurrent[map->constantName()][label];
 
         MonTabWidget *tabWidget = new MonTabWidget(this);
         stack->insertWidget(labelIndex++, tabWidget);
@@ -228,7 +230,7 @@ void Editor::displayWildMonTables() {
 
             tabWidget->clearTableAt(tabIndex);
 
-            if (project->wildMonData.contains(map->constantName()) && header.wildMons[fieldName].active) {
+            if (wildMonDataCurrent.contains(map->constantName()) && header.wildMons[fieldName].active) {
                 tabWidget->populateTab(tabIndex, header.wildMons[fieldName]);
             } else {
                 tabWidget->setTabActive(tabIndex, false);

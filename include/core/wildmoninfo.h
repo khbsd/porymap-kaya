@@ -32,6 +32,7 @@ struct EncounterField {
 };
 
 typedef QVector<EncounterField> EncounterFields;
+typedef tsl::ordered_map<QString, WildPokemonHeader> WildMonHeaderArrayMap;
 
 void setDefaultEncounterRate(QString fieldName, int rate);
 WildMonInfo getDefaultMonInfo(const EncounterField &field);
