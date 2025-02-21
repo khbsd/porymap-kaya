@@ -1733,6 +1733,11 @@ bool Project::readWildMonData() {
                     QString headerLabel;
                     for (iter = encArrayObj.begin(); iter != encArrayObj.end(); iter++) 
                         headerLabel = iter->first;
+                
+                    // Saves the first label to use for later
+                    if (this->currentArrayMapGroup == NULL) {
+                        this->currentArrayMapGroup = headerLabel;
+                    }
 
                     logInfo(QString("[ENCOUNTER GROUP] %1").arg(headerLabel)); // tempLogs
                     

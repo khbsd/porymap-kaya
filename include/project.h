@@ -145,6 +145,7 @@ public:
     QVector<EncounterField> wildMonFields;
     QVector<QString> encounterGroupLabels;
     QVector<poryjson::Json::object> extraEncounterGroups;
+    QString currentArrayMapGroup;
 
     bool readSpeciesIconPaths();
     QPixmap getSpeciesIcon(const QString &species) const;
