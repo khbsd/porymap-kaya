@@ -205,18 +205,19 @@ QString Editor::getWildMonDataLabel() {
     return project->currentArrayMapGroup;
 }
 
-WildMonData Editor::getWildMonData(QString label) {
+Project::WildMonDataMap Editor::getWildMonData(QString label) {
     logInfo(label);
     if (label == "None" || !project->usingGroupArrays) {
         return project->wildMonData;
     }
-    return project->wildMonDataArrayMap.at(label);
+    Project::WildMonDataMap tempHeader = project->wildMonDataArrayMap[map->constantName()];
+    return tempHeader[label];
 }
 
 void Editor::displayWildMonTables() {
     clearWildMonTables();
 
-    WildMonData wildMonDataCurrent = getWildMonData(getWildMonDataLabel());
+    Project::WildMonDataMap wildMonDataCurrent = getWildMonData(getWildMonDataLabel());
 
     // Don't try to read encounter data if it doesn't exist on disk for this map.
     if (!wildMonDataCurrent.contains(map->constantName())) {

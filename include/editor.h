@@ -182,7 +182,7 @@ public:
     bool selectingEvent = false;
 
     QString getWildMonDataLabel();
-    WildMonData getWildMonData(QString label);
+    Project::WildMonDataMap getWildMonData(QString label);
 
     void deleteSelectedEvents();
     void shouldReselectEvents();
