@@ -18,7 +18,6 @@
 #include <QMouseEvent>
 #include <QDir>
 #include <QProcess>
-#include <cstddef>
 #include <math.h>
 
 static bool selectNewEvents = false;
@@ -198,7 +197,7 @@ void Editor::clearWildMonTables() {
     emit wildMonTableClosed();
 }
 
-QString Editor::getWildMonHeaderLabel() {
+QString Editor::getWildMonDataLabel() {
     QString noneGroup = "None";
     if (project->currentArrayMapGroup == NULL) {
         return noneGroup;
@@ -206,17 +205,18 @@ QString Editor::getWildMonHeaderLabel() {
     return project->currentArrayMapGroup;
 }
 
-WildPokemonHeader Editor::getWildMonHeader(QString label) {
+WildMonData Editor::getWildMonData(QString label) {
+    logInfo(label);
     if (label == "None" || !project->usingGroupArrays) {
         return project->wildMonData;
     }
-    return project->wildMonDataArrayMap[label];
+    return project->wildMonDataArrayMap.at(label);
 }
 
 void Editor::displayWildMonTables() {
     clearWildMonTables();
 
-    WildPokemonHeader wildMonDataCurrent = getWildMonHeader(getWildMonHeaderLabel());
+    WildMonData wildMonDataCurrent = getWildMonData(getWildMonDataLabel());
 
     // Don't try to read encounter data if it doesn't exist on disk for this map.
     if (!wildMonDataCurrent.contains(map->constantName())) {

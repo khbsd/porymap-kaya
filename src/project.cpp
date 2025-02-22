@@ -23,7 +23,6 @@
 #include <QRegularExpression>
 #include <algorithm>
 
-#include <cstddef>
 #include <typeinfo>
 
 int Project::num_tiles_primary = 512;

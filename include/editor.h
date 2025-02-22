@@ -181,6 +181,9 @@ public:
 
     bool selectingEvent = false;
 
+    QString getWildMonDataLabel();
+    WildMonData getWildMonData(QString label);
+
     void deleteSelectedEvents();
     void shouldReselectEvents();
     void scaleMapView(int);

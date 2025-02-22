@@ -1,5 +1,4 @@
 #pragma once
-#include "core/wildmoninfo.h"
 #ifndef PROJECT_H
 #define PROJECT_H
 
@@ -139,8 +138,11 @@ public:
     QString getNewHealLocationName(const Map* map) const;
 
     bool readWildMonData();
-    tsl::ordered_map<QString, tsl::ordered_map<QString, WildPokemonHeader>> wildMonData;
-    tsl::ordered_map<QString, tsl::ordered_map<QString, WildMonHeaderArrayMap>> wildMonDataArrayMap;
+    
+    typedef tsl::ordered_map<QString, tsl::ordered_map<QString, WildPokemonHeader>> WildMonDataMap;
+    WildMonDataMap wildMonData;
+    typedef tsl::ordered_map<QString, tsl::ordered_map<QString, WildMonHeaderArrayMap>> WildMonDataArrayMap;
+    WildMonDataArrayMap wildMonDataArrayMap;
 
     QVector<EncounterField> wildMonFields;
     QVector<QString> encounterGroupLabels;
