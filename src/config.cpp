@@ -496,18 +496,18 @@ QMap<QString, QString> PorymapConfig::getKeyValueMap() {
     return map;
 }
 
-QString PorymapConfig::stringFromByteArray(QByteArray bytearray) {
+QString PorymapConfig::stringFromByteArray(const QByteArray &bytearray) {
     QString ret;
-    for (auto ch : bytearray) {
+    for (const auto &ch : bytearray) {
         ret += QString::number(static_cast<int>(ch)) + ":";
     }
     return ret;
 }
 
-QByteArray PorymapConfig::bytesFromString(QString in) {
+QByteArray PorymapConfig::bytesFromString(const QString &in) {
     QByteArray ba;
-    QStringList split = in.split(":");
-    for (auto ch : split) {
+    QStringList split = in.split(":", Qt::SkipEmptyParts);
+    for (const auto &ch : split) {
         ba.append(static_cast<char>(ch.toInt()));
     }
     return ba;
@@ -803,6 +803,8 @@ void ProjectConfig::parseConfigKeyValue(QString key, QString value) {
         const QStringList behaviorList = value.split(",", Qt::SkipEmptyParts);
         for (auto s : behaviorList)
             this->warpBehaviors.append(getConfigUint32(key, s));
+    } else if (key == "max_events_per_group") {
+        this->maxEventsPerGroup = getConfigInteger(key, value, 1, INT_MAX, 255);
     } else {
         logWarn(QString("Invalid config key found in config file %1: '%2'").arg(this->getConfigFilepath()).arg(key));
     }
@@ -898,6 +900,7 @@ QMap<QString, QString> ProjectConfig::getKeyValueMap() {
     for (const auto &value : this->warpBehaviors)
         warpBehaviorStrs.append("0x" + QString("%1").arg(value, 2, 16, QChar('0')).toUpper());
     map.insert("warp_behaviors", warpBehaviorStrs.join(","));
+    map.insert("max_events_per_group", QString::number(this->maxEventsPerGroup));
 
     return map;
 }
