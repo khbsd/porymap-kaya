@@ -1675,7 +1675,7 @@ bool Project::readWildMonData() {
         if (this->usingGroupArrays) {
             for (const auto &encounterJson : mainArrayObject["encounters"].array_items()) {
                 OrderedJson::object encounterObj = encounterJson.object_items();
-                WildMonHeaderArrayMap headerArrayMap;
+                WildPokemonHeaderMap headerArrayMap;
                 WildPokemonHeader header;
 
                 logInfo(QString("[MAP LABEL] %1").arg(encounterObj["base_label"].string_value())); // tempLogs
@@ -1705,7 +1705,7 @@ bool Project::readWildMonData() {
                         OrderedJson::object encFieldObj = encFieldJson.object_items();
 
                         WildPokemonHeader newHeader;
-                        headerArrayMap.insert({ headerLabel, newHeader });
+                        headerArrayMap.wildMonsMap.insert({ headerLabel, newHeader });
 
                         // Check for each possible encounter type using the encounter types we grabbed earlier
                         for (const EncounterField &monField : this->wildMonFields) {
@@ -1721,6 +1721,8 @@ bool Project::readWildMonData() {
 
                             WildMonInfo monInfo;
                             monInfo.active = true;
+
+                            headerArrayMap[headerLabel].wildMonsMap.insert({ field, monInfo })
 
                             // Read encounter rate
                             monInfo.encounterRate = encounterFieldObj["encounter_rate"].int_value();
@@ -1743,7 +1745,7 @@ bool Project::readWildMonData() {
                                 monInfo.wildPokemon.append(WildPokemon());
                             }
                             header.wildMons[field] = monInfo;
-                            headerArrayMap[headerLabel].wildMons[field] = monInfo;
+                            headerArrayMap.wildMonsMap[headerLabel][field] = monInfo;
                         }
                     }
                 }

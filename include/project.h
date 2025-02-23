@@ -141,7 +141,7 @@ public:
     
     typedef tsl::ordered_map<QString, tsl::ordered_map<QString, WildPokemonHeader>> WildMonDataMap;
     WildMonDataMap wildMonData;
-    typedef tsl::ordered_map<QString, tsl::ordered_map<QString, WildMonHeaderArrayMap>> WildMonDataArrayMap;
+    typedef tsl::ordered_map<QString, tsl::ordered_map<QString, WildMonDataMap>> WildMonDataArrayMap;
     WildMonDataArrayMap wildMonDataArrayMap;
 
     QVector<EncounterField> wildMonFields;
