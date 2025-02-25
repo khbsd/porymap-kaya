@@ -57,9 +57,8 @@ public:
     GridSettings gridSettings;
 
     void setProject(Project * project);
-    void save();
-    void saveProject();
-    void saveUiFields();
+    void saveAll();
+    void saveCurrent();
     void saveEncounterTabData();
 
     void closeProject();
@@ -205,6 +204,7 @@ private:
 
     EditMode editMode = EditMode::None;
 
+    void save(bool currentOnly);
     void clearMap();
     void clearMetatileSelector();
     void clearMovementPermissionSelector();
