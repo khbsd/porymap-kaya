@@ -13,6 +13,7 @@
 #include "customattributesframe.h"
 #include "validator.h"
 #include "message.h"
+#include "typeinfo"
 #include <QCheckBox>
 #include <QPainter>
 #include <QMouseEvent>
@@ -203,19 +204,35 @@ QString Editor::getWildMonDataLabel() {
     return project->currentArrayMapGroup;
 }
 
-Project::WildMonDataMap Editor::getWildMonData(QString label) {
-    logInfo(label);
-    if (label == "None" || !project->usingGroupArrays) {
-        return project->wildMonData;
+Project::WildMonDataMap Editor::getWildMonData(QString headerLabel) {
+    Project::WildMonDataMap tempHeader;
+
+    if (headerLabel == "None" || !project->usingGroupArrays) {
+        tempHeader = project->wildMonData;
+    } else {
+        logInfo(map->constantName());
+        for (auto groupPair : project->wildMonDataArrayMap[map->constantName()]) {
+            logInfo(QString("%1").arg(groupPair.first));
+            logInfo(QString("%1").arg(typeid(groupPair.second).name()));
+            for (auto groupPair_2 : groupPair.second.wildMonsMap) {
+                logInfo(QString("%1").arg(typeid(groupPair_2.second.wildMons["land_mons"]).name()));
+                logInfo(QString("%1").arg(groupPair_2.first));
+                for (auto groupPair_3 : groupPair_2.second.wildMons) {
+                    logInfo(QString("%1").arg(typeid(groupPair_3.second).name()));
+                    logInfo(QString("%1").arg(groupPair_3.first));
+                }
+            }
+        }
     }
-    Project::WildMonDataMap tempHeader = project->wildMonDataArrayMap[map->constantName()];
-    return tempHeader[label];
+    
+    return project->wildMonData;
 }
 
 void Editor::displayWildMonTables() {
     clearWildMonTables();
 
     Project::WildMonDataMap wildMonDataCurrent = getWildMonData(getWildMonDataLabel());
+    //auto wildMonDataCurrent = project->wildMonData;
 
     // Don't try to read encounter data if it doesn't exist on disk for this map.
     if (!wildMonDataCurrent.contains(map->constantName())) {
