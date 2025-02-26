@@ -152,13 +152,12 @@ QStringList Map::getScriptLabels(Event::Group group) {
         scriptLabels = scriptTracker.getScripts();
     }
 
-    // Add scripts from map's scripts file, and empty names.
+    // Add labels from the map's scripts file
     scriptLabels.append(m_scriptsFileLabels);
     scriptLabels.sort(Qt::CaseInsensitive);
-    scriptLabels.prepend("0x0");
-    scriptLabels.prepend("NULL");
-
     scriptLabels.removeAll("");
+    scriptLabels.removeAll("0");
+    scriptLabels.removeAll("0x0");
     scriptLabels.removeDuplicates();
 
     return scriptLabels;
@@ -169,7 +168,7 @@ QString Map::getScriptsFilePath() const {
     auto path = QDir::cleanPath(QString("%1/%2/%3/scripts")
                                         .arg(projectConfig.projectDir)
                                         .arg(projectConfig.getFilePath(ProjectFilePath::data_map_folders))
-                                        .arg(m_name));
+                                        .arg(!m_sharedScriptsMap.isEmpty() ? m_sharedScriptsMap : m_name));
     auto extension = Project::getScriptFileExtension(usePoryscript);
     if (usePoryscript && !QFile::exists(path + extension))
         extension = Project::getScriptFileExtension(false);

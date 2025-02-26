@@ -45,7 +45,6 @@ public:
     QStringList layoutIdsMaster;
     QMap<QString, Layout*> mapLayouts;
     QMap<QString, Layout*> mapLayoutsMaster;
-    QMap<QString, EventGraphics*> eventGraphicsMap;
     QMap<QString, int> gfxDefines;
     QString defaultSong;
     QStringList songNames;
@@ -68,7 +67,6 @@ public:
     QMap<QString, uint16_t> unusedMetatileLabels;
     QMap<QString, uint32_t> metatileBehaviorMap;
     QMap<uint32_t, QString> metatileBehaviorMapInverse;
-    QMap<QString, QString> facingDirections;
     ParseUtil parser;
     QFileSystemWatcher fileWatcher;
     QSet<QString> modifiedFiles;
@@ -216,7 +214,10 @@ public:
     bool readFieldmapMasks();
     QMap<QString, QMap<QString, QString>> readObjEventGfxInfo();
 
-    void setEventPixmap(Event *event, bool forceLoad = false);
+    QPixmap getEventPixmap(const QString &gfxName, const QString &movementName);
+    QPixmap getEventPixmap(const QString &gfxName, int frame, bool hFlip);
+    QPixmap getEventPixmap(Event::Group group);
+    void loadEventPixmap(Event *event, bool forceLoad = false);
 
     QString fixPalettePath(QString path);
     QString fixGraphicPath(QString path);
@@ -224,6 +225,7 @@ public:
     static QString getScriptFileExtension(bool usePoryScript);
     QString getScriptDefaultString(bool usePoryScript, QString mapName) const;
     QStringList getEventScriptsFilePaths() const;
+    void insertGlobalScriptLabels(QStringList &scriptLabels) const;
 
     QString getDefaultPrimaryTilesetLabel() const;
     QString getDefaultSecondaryTilesetLabel() const;
@@ -260,6 +262,18 @@ public:
 private:
     QMap<QString, QString> mapSectionDisplayNames;
     QMap<QString, qint64> modifiedFileTimestamps;
+    QMap<QString, QString> facingDirections;
+
+    struct EventGraphics
+    {
+        QString filepath;
+        bool loaded = false;
+        QImage spritesheet;
+        int spriteWidth = -1;
+        int spriteHeight = -1;
+        bool inanimate = false;
+    };
+    QMap<QString, EventGraphics*> eventGraphicsMap;
 
     void updateLayout(Layout *);
 
@@ -290,6 +304,7 @@ signals:
     void mapSectionDisplayNameChanged(const QString &idName, const QString &displayName);
     void mapSectionIdNamesChanged(const QStringList &idNames);
     void mapsExcluded(const QStringList &excludedMapNames);
+    void eventScriptLabelsRead();
 };
 
 #endif // PROJECT_H

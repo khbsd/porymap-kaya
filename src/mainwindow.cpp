@@ -297,6 +297,7 @@ void MainWindow::initExtraSignals() {
 
     connect(ui->action_NewMap, &QAction::triggered, this, &MainWindow::openNewMapDialog);
     connect(ui->action_NewLayout, &QAction::triggered, this, &MainWindow::openNewLayoutDialog);
+    connect(ui->actionDuplicate_Current_Map_Layout, &QAction::triggered, this, &MainWindow::openDuplicateMapOrLayoutDialog);
 }
 
 void MainWindow::on_actionCheck_for_Updates_triggered() {
@@ -1103,7 +1104,6 @@ bool MainWindow::setProjectUI() {
     ui->newEventToolButton->newSecretBaseAction->setVisible(projectConfig.eventSecretBaseEnabled);
     ui->newEventToolButton->newCloneObjectAction->setVisible(projectConfig.eventCloneObjectEnabled);
 
-    Event::setIcons();
     editor->setCollisionGraphics();
     ui->spinBox_SelectedElevation->setMaximum(Block::getMaxElevation());
     ui->spinBox_SelectedCollision->setMaximum(Block::getMaxCollision());
@@ -1161,8 +1161,6 @@ void MainWindow::clearProjectUI() {
     delete this->layoutTreeModel;
     delete this->layoutListProxyModel;
     resetMapListFilters();
-
-    Event::clearIcons();
 }
 
 void MainWindow::scrollMapList(MapTree *list, const QString &itemName) {
@@ -1314,12 +1312,7 @@ void MainWindow::onNewMapCreated(Map *newMap, const QString &groupName) {
         ui->comboBox_EmergeMap->insertItem(mapIndex, newMap->name());
     }
 
-    if (userSetMap(newMap->name())) {
-        // TODO: Creating a new map shouldn't be automatically saved.
-        //       For one, it takes away the option to discard the new map.
-        //       For two, if the new map uses an existing layout, any unsaved changes to that layout will also be saved.
-        save(true);
-    }
+    userSetMap(newMap->name());
 }
 
 // Called any time a new layout is created (including as a byproduct of creating a new map)
@@ -1409,6 +1402,14 @@ void MainWindow::openDuplicateLayoutDialog(const QString &layoutId) {
         dialog->open();
     } else {
         RecentErrorMessage::show(QString("Unable to duplicate '%1'.").arg(layoutId), this);
+    }
+}
+
+void MainWindow::openDuplicateMapOrLayoutDialog() {
+    if (this->editor->map) {
+        openDuplicateMapDialog(this->editor->map->name());
+    } else if (this->editor->layout) {
+        openDuplicateLayoutDialog(this->editor->layout->id);
     }
 }
 
@@ -2735,12 +2736,10 @@ void MainWindow::on_actionOpen_Config_Folder_triggered() {
 void MainWindow::on_actionPreferences_triggered() {
     if (!preferenceEditor) {
         preferenceEditor = new PreferenceEditor(this);
-        connect(preferenceEditor, &PreferenceEditor::themeChanged,
-                this, &MainWindow::setTheme);
-        connect(preferenceEditor, &PreferenceEditor::themeChanged,
-                editor, &Editor::maskNonVisibleConnectionTiles);
-        connect(preferenceEditor, &PreferenceEditor::preferencesSaved,
-                this, &MainWindow::togglePreferenceSpecificUi);
+        connect(preferenceEditor, &PreferenceEditor::themeChanged, this, &MainWindow::setTheme);
+        connect(preferenceEditor, &PreferenceEditor::themeChanged, editor, &Editor::maskNonVisibleConnectionTiles);
+        connect(preferenceEditor, &PreferenceEditor::preferencesSaved, this, &MainWindow::togglePreferenceSpecificUi);
+        connect(preferenceEditor, &PreferenceEditor::scriptSettingsChanged, editor->project, &Project::readEventScriptLabels);
     }
 
     openSubWindow(preferenceEditor);
@@ -2755,8 +2754,9 @@ void MainWindow::togglePreferenceSpecificUi() {
     if (this->updatePromoter)
         this->updatePromoter->updatePreferences();
 
-    // Redraw all events to use updated porymapConfig.eventSelectionShapeMode
-    this->editor->redrawAllEvents();
+    // Changes to porymapConfig.loadAllEventScripts or porymapConfig.eventSelectionShapeMode
+    // require us to repopulate the EventFrames and redraw event pixmaps, respectively.
+    this->editor->updateEvents();
 }
 
 void MainWindow::openProjectSettingsEditor(int tab) {
