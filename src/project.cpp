@@ -1704,10 +1704,10 @@ bool Project::readWildMonData() {
             for (const auto &encounterJson : mainArrayObject["encounters"].array_items()) {
                 OrderedJson::object encounterObj = encounterJson.object_items();
                 WildPokemonHeaderMap headerMap;
-                WildPokemonHeader header;
-
                 // logInfo(QString("[MAP LABEL] %1").arg(encounterObj["base_label"].string_value())); // tempLogs
 
+                int counter = 0;
+                QVector<QString> headerLabels;
                 for (const auto &encArrayJson : encounterObj["encounter_array"].array_items()) {
                     OrderedJson::object encArrayObj = encArrayJson.object_items();
 
@@ -1719,13 +1719,15 @@ bool Project::readWildMonData() {
                     // As far as I know, this is the best way to get the key,
                     // even if there's only one item in the object.
                     QString headerLabel;
-                    for (iter = encArrayObj.begin(); iter != encArrayObj.end(); iter++) 
-                        headerLabel = iter->first;
-                
-                    // Saves the first label to use for later
-                    if (this->currentArrayMapGroup == NULL) {
-                        this->currentArrayMapGroup = headerLabel;
+                    for (iter = encArrayObj.begin(); iter != encArrayObj.end(); iter++) {
+                        headerLabels.append(iter->first);
+                        // Saves the first label to use for later
+                        if (this->currentArrayMapGroup == NULL || counter == 0) {
+                            this->currentArrayMapGroup = headerLabels.at(counter);
+                        }
                     }
+                    
+                    headerLabel = headerLabels.at(counter);
 
                     // logInfo(QString("[ENCOUNTER GROUP] %1").arg(headerLabel)); // tempLogs
                     
@@ -1741,7 +1743,7 @@ bool Project::readWildMonData() {
                                 continue;
                             }
                             // if the field exists, use it to reference the keys for the objects in each encounterObj
-                            // logInfo(QString("[ENCOUNTER FIELD TYPE] %1").arg(field)); // tempLogs
+                            //logInfo(QString("[ENCOUNTER FIELD TYPE] %1").arg(field)); // tempLogs
                             OrderedJson::object encounterFieldObj = encFieldObj[field].object_items();
 
                             WildMonInfo monInfo;
@@ -1759,7 +1761,7 @@ bool Project::readWildMonData() {
                                 newMon.minLevel = monObj["min_level"].int_value();
                                 newMon.maxLevel = monObj["max_level"].int_value();
                                 newMon.species = monObj["species"].string_value();
-                                // logInfo(QString("[SPECIES] %1").arg(monObj["species"].string_value())); // tempLogs
+                                //logInfo(QString("[SPECIES] %1").arg(monObj["species"].string_value())); // tempLogs
                                 monInfo.wildPokemon.append(newMon);
                             }
 
@@ -1767,14 +1769,15 @@ bool Project::readWildMonData() {
                             for (int i = monInfo.wildPokemon.length(); i < monField.encounterRates.length(); i++) {
                                 monInfo.wildPokemon.append(WildPokemon());
                             }
-                            header.wildMons[field] = monInfo;
+                            // header.wildMons[field] = monInfo;
                             headerMap.wildMonsMap[headerLabel].wildMons[field] = monInfo;
                         }
                     }
+                    counter += 1;
                 }
                 const QString mapConstant = encounterObj["map"].string_value();
                 const QString baseLabel = encounterObj["base_label"].string_value();
-                this->wildMonData[mapConstant].insert({baseLabel, header});
+                // this->wildMonData[mapConstant].insert({baseLabel, header});
                 this->wildMonDataArrayMap[mapConstant].insert({baseLabel, headerMap});
                 this->encounterGroupLabels.append(baseLabel);
             }
