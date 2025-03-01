@@ -222,8 +222,10 @@ void Editor::updateWildMonData() {
             // logInfo(QString("value: %1").arg(typeid(groupPair.second).name()));
             for (auto groupPair_2 : groupPair.second.wildMonsMap) {
                 // needs to test for data in header
+                // TODO: add "time_evening" and "time_night" encounter groups
+                // TODO: add switching
                 // if (groupPair_2.first.compare(headerLabel) == 0) {
-                if (groupPair_2.first.compare("time_day") == 0) {
+                if (groupPair_2.first.compare("time_morning") == 0) {
                     logInfo(QString("%1").arg(groupPair_2.first));
                     logInfo(QString("%1").arg(headerLabel));
                     project->wildMonData[map->constantName()].insert({ groupPair.first, groupPair_2.second });
