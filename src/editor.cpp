@@ -224,8 +224,7 @@ void Editor::updateWildMonData() {
                 // needs to test for data in header
                 // TODO: add "time_evening" and "time_night" encounter groups
                 // TODO: add switching
-                // if (groupPair_2.first.compare(headerLabel) == 0) {
-                if (groupPair_2.first.compare("time_morning") == 0) {
+                if (groupPair_2.first.compare(headerLabel) == 0) {
                     logInfo(QString("%1").arg(groupPair_2.first));
                     logInfo(QString("%1").arg(headerLabel));
                     project->wildMonData[map->constantName()].insert({ groupPair.first, groupPair_2.second });
@@ -237,7 +236,6 @@ void Editor::updateWildMonData() {
 
 void Editor::displayWildMonTables() {
     clearWildMonTables();
-
     updateWildMonData();
 
     // Don't try to read encounter data if it doesn't exist on disk for this map.
@@ -249,7 +247,15 @@ void Editor::displayWildMonTables() {
     for (auto groupPair : project->wildMonData[map->constantName()])
         labelCombo->addItem(groupPair.first);
 
+    QComboBox *arrayCombo = ui->comboBox_EncounterGroupArray;
+    for (auto groupPair : project->wildMonDataArrayMap[map->constantName()]) {
+        for (auto groupPair_2 : groupPair.second.wildMonsMap) {
+            arrayCombo->addItem(groupPair_2.first);
+        }
+    }
+
     labelCombo->setCurrentText(labelCombo->itemText(0));
+    arrayCombo->setCurrentText(arrayCombo->itemText(0));
 
     QStackedWidget *stack = ui->stackedWidget_WildMons;
     int labelIndex = 0;

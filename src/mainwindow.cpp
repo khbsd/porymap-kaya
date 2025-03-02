@@ -271,6 +271,10 @@ void MainWindow::initExtraSignals() {
         ui->stackedWidget_WildMons->setCurrentIndex(index);
     });
 
+    connect(ui->comboBox_EncounterGroupArray, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index){
+        ui->stackedWidget_WildMons->setCurrentIndex(index);
+    });
+
     // Convert the layout of the map tools' frame into an adjustable FlowLayout
     FlowLayout *flowLayout = new FlowLayout;
     flowLayout->setContentsMargins(ui->frame_mapTools->layout()->contentsMargins());
