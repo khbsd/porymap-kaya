@@ -343,7 +343,7 @@ void MainWindow::initEditor() {
     connect(this->editor, &Editor::openConnectedMap, this, &MainWindow::onOpenConnectedMap);
     connect(this->editor, &Editor::warpEventDoubleClicked, this, &MainWindow::openWarpMap);
     connect(this->editor, &Editor::currentMetatilesSelectionChanged, this, &MainWindow::currentMetatilesSelectionChanged);
-    connect(this->editor, &Editor::wildMonTableEdited, [this] { this->markMapEdited(); });
+    connect(this->editor, &Editor::wildMonTableEdited, this,  &MainWindow::markMapEdited);
     connect(this->editor, &Editor::mapRulerStatusChanged, this, &MainWindow::onMapRulerStatusChanged);
     connect(this->editor, &Editor::tilesetUpdated, this, &Scripting::cb_TilesetUpdated);
     connect(ui->newEventToolButton, &NewEventToolButton::newEventAdded, this->editor, &Editor::addNewEvent);
@@ -513,6 +513,15 @@ void MainWindow::markSpecificMapEdited(Map* map) {
 
     if (editor && editor->map == map)
         updateWindowTitle();
+    updateMapList();
+}
+
+void MainWindow::markLayoutEdited() {
+    if (!this->editor->layout)
+        return;
+    this->editor->layout->hasUnsavedDataChanges = true;
+
+    updateWindowTitle();
     updateMapList();
 }
 
@@ -2589,7 +2598,7 @@ void MainWindow::on_comboBox_PrimaryTileset_currentTextChanged(const QString &ti
         redrawMapScene();
         updateTilesetEditor();
         prefab.updatePrefabUi(editor->layout);
-        markMapEdited();
+        markLayoutEdited();
     }
 }
 
@@ -2600,7 +2609,7 @@ void MainWindow::on_comboBox_SecondaryTileset_currentTextChanged(const QString &
         redrawMapScene();
         updateTilesetEditor();
         prefab.updatePrefabUi(editor->layout);
-        markMapEdited();
+        markLayoutEdited();
     }
 }
 
@@ -2743,6 +2752,9 @@ void MainWindow::on_actionPreferences_triggered() {
         connect(preferenceEditor, &PreferenceEditor::themeChanged, this, &MainWindow::setTheme);
         connect(preferenceEditor, &PreferenceEditor::themeChanged, editor, &Editor::maskNonVisibleConnectionTiles);
         connect(preferenceEditor, &PreferenceEditor::preferencesSaved, this, &MainWindow::togglePreferenceSpecificUi);
+        // Changes to porymapConfig.loadAllEventScripts or porymapConfig.eventSelectionShapeMode
+        // require us to repopulate the EventFrames and redraw event pixmaps, respectively.
+        connect(preferenceEditor, &PreferenceEditor::preferencesSaved, editor, &Editor::updateEvents);
         connect(preferenceEditor, &PreferenceEditor::scriptSettingsChanged, editor->project, &Project::readEventScriptLabels);
     }
 
@@ -2757,10 +2769,6 @@ void MainWindow::togglePreferenceSpecificUi() {
 
     if (this->updatePromoter)
         this->updatePromoter->updatePreferences();
-
-    // Changes to porymapConfig.loadAllEventScripts or porymapConfig.eventSelectionShapeMode
-    // require us to repopulate the EventFrames and redraw event pixmaps, respectively.
-    this->editor->updateEvents();
 }
 
 void MainWindow::openProjectSettingsEditor(int tab) {

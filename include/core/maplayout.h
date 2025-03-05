@@ -20,11 +20,10 @@ public:
     Layout() {}
     Layout(const Layout &other);
 
-    static QString layoutConstantFromName(QString mapName);
-    static QString defaultSuffix();
-
+    static QString layoutConstantFromName(const QString &name);
 
     bool loaded = false;
+    bool hasUnsavedDataChanges = false;
 
     QString id;
     QString name;
@@ -113,6 +112,7 @@ public:
     void clearBorderCache();
     void cacheBorder();
 
+    void setClean();
     bool hasUnsavedChanges() const;
 
     bool layoutBlockChanged(int i, const Blockdata &cache);

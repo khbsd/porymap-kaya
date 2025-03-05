@@ -4,6 +4,7 @@
 
 #include "scripting.h"
 #include "imageproviders.h"
+#include "utility.h"
 
 Layout::Layout(const Layout &other) : Layout() {
     copyFrom(&other);
@@ -32,13 +33,8 @@ void Layout::copyFrom(const Layout *other) {
     this->border = other->border;
 }
 
-QString Layout::layoutConstantFromName(QString mapName) {
-    // Transform map names of the form 'GraniteCave_B1F` into layout constants like 'LAYOUT_GRANITE_CAVE_B1F'.
-    static const QRegularExpression caseChange("([a-z])([A-Z])");
-    QString nameWithUnderscores = mapName.replace(caseChange, "\\1_\\2");
-    QString withMapAndUppercase = "LAYOUT_" + nameWithUnderscores.toUpper();
-    static const QRegularExpression underscores("_+");
-    return withMapAndUppercase.replace(underscores, "_");
+QString Layout::layoutConstantFromName(const QString &name) {
+    return projectConfig.getIdentifier(ProjectIdentifier::define_layout_prefix) + Util::toDefineCase(name);
 }
 
 Layout::Settings Layout::settings() const {
@@ -322,44 +318,58 @@ QPixmap Layout::render(bool ignoreCache, Layout *fromLayout, QRect bounds) {
     bool changed_any = false;
     int width_ = getWidth();
     int height_ = getHeight();
-    if (image.isNull() || image.width() != width_ * 16 || image.height() != height_ * 16) {
-        image = QImage(width_ * 16, height_ * 16, QImage::Format_RGBA8888);
+    if (this->image.isNull() || this->image.width() != width_ * 16 || this->image.height() != height_ * 16) {
+        this->image = QImage(width_ * 16, height_ * 16, QImage::Format_RGBA8888);
         changed_any = true;
     }
     if (this->blockdata.isEmpty() || !width_ || !height_) {
-        pixmap = pixmap.fromImage(image);
-        return pixmap;
+        this->pixmap = this->pixmap.fromImage(this->image);
+        return this->pixmap;
     }
 
-    QPainter painter(&image);
+    // There are a lot of external changes that can invalidate a general metatile image cache.
+    // However, during a single pass at rendering the layout there shouldn't be any changes to
+    // the tiles, tileset palettes, or metatile layer order/opacity, and layouts often have
+    // many repeated metatile IDs, so we create a cache for each request to render the layout.
+    QHash<uint16_t, QImage> imageCache;
+
+    QPainter painter(&this->image);
     for (int i = 0; i < this->blockdata.length(); i++) {
         if (!ignoreCache && !layoutBlockChanged(i, this->cached_blockdata)) {
             continue;
         }
-        changed_any = true;
         int map_y = width_ ? i / width_ : 0;
         int map_x = width_ ? i % width_ : 0;
         if (bounds.isValid() && !bounds.contains(map_x, map_y)) {
             continue;
         }
-        QPoint metatile_origin = QPoint(map_x * 16, map_y * 16);
-        Block block = this->blockdata.at(i);
-        QImage metatile_image = getMetatileImage(
-            block.metatileId(),
-            fromLayout ? fromLayout->tileset_primary   : this->tileset_primary,
-            fromLayout ? fromLayout->tileset_secondary : this->tileset_secondary,
-            metatileLayerOrder,
-            metatileLayerOpacity
-        );
-        painter.drawImage(metatile_origin, metatile_image);
+
+        uint16_t metatileId = this->blockdata.at(i).metatileId();
+        QImage metatileImage;
+        if (imageCache.contains(metatileId)) {
+            metatileImage = imageCache.value(metatileId);
+        } else {
+            metatileImage = getMetatileImage(
+                metatileId,
+                fromLayout ? fromLayout->tileset_primary   : this->tileset_primary,
+                fromLayout ? fromLayout->tileset_secondary : this->tileset_secondary,
+                metatileLayerOrder,
+                metatileLayerOpacity
+            );
+            imageCache.insert(metatileId, metatileImage);
+        }
+
+        QPoint metatileOrigin = QPoint(map_x * 16, map_y * 16);
+        painter.drawImage(metatileOrigin, metatileImage);
+        changed_any = true;
     }
     painter.end();
     if (changed_any) {
         cacheBlockdata();
-        pixmap = pixmap.fromImage(image);
+        this->pixmap = this->pixmap.fromImage(this->image);
     }
 
-    return pixmap;
+    return this->pixmap;
 }
 
 QPixmap Layout::renderCollision(bool ignoreCache) {
@@ -437,6 +447,11 @@ QPixmap Layout::getLayoutItemPixmap() {
     return this->layoutItem ? this->layoutItem->pixmap() : QPixmap();
 }
 
+void Layout::setClean() {
+    this->editHistory.setClean();
+    this->hasUnsavedDataChanges = false;
+}
+
 bool Layout::hasUnsavedChanges() const {
-    return !this->editHistory.isClean() || !this->newFolderPath.isEmpty();
+    return !this->editHistory.isClean() || this->hasUnsavedDataChanges || !this->newFolderPath.isEmpty();
 }

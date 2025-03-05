@@ -10,6 +10,7 @@
 #include "filedialog.h"
 #include "validator.h"
 #include "eventfilters.h"
+#include "utility.h"
 #include <QMessageBox>
 #include <QDialogButtonBox>
 #include <QCloseEvent>
@@ -33,7 +34,10 @@ TilesetEditor::TilesetEditor(Project *project, Layout *layout, QWidget *parent) 
     ui->actionShow_Tileset_Divider->setChecked(porymapConfig.showTilesetEditorDivider);
     ui->spinBox_paletteSelector->setMinimum(0);
     ui->spinBox_paletteSelector->setMaximum(Project::getNumPalettesTotal() - 1);
-    ui->lineEdit_metatileLabel->setValidator(new IdentifierValidator(this));
+
+    auto validator = new IdentifierValidator(this);
+    validator->setAllowEmpty(true);
+    ui->lineEdit_metatileLabel->setValidator(validator);
 
     ActiveWindowFilter *filter = new ActiveWindowFilter(this);
     connect(filter, &ActiveWindowFilter::activated, this, &TilesetEditor::onWindowActivated);
@@ -420,9 +424,7 @@ void TilesetEditor::queueMetatileReload(uint16_t metatileId) {
 }
 
 void TilesetEditor::onHoveredTileChanged(uint16_t tile) {
-    QString message = QString("Tile: 0x%1")
-                        .arg(QString("%1").arg(tile, 3, 16, QChar('0')).toUpper());
-    this->ui->statusbar->showMessage(message);
+    this->ui->statusbar->showMessage(QString("Tile: %1").arg(Util::toHexString(tile, 3)));
 }
 
 void TilesetEditor::onHoveredTileCleared() {
@@ -473,7 +475,7 @@ void TilesetEditor::onMetatileLayerTileChanged(int x, int y) {
         }
     }
 
-    this->metatileSelector->draw();
+    this->metatileSelector->drawSelectedMetatile();
     this->metatileLayersItem->draw();
     this->tileSelector->draw();
     this->commitMetatileChange(prevMetatile);
@@ -601,7 +603,7 @@ void TilesetEditor::on_comboBox_layerType_activated(int layerType)
         Metatile *prevMetatile = new Metatile(*this->metatile);
         this->metatile->setLayerType(layerType);
         this->commitMetatileChange(prevMetatile);
-        this->metatileSelector->draw(); // Changing the layer type can affect how fully transparent metatiles appear
+        this->metatileSelector->drawSelectedMetatile(); // Changing the layer type can affect how fully transparent metatiles appear
     }
 }
 
@@ -858,7 +860,7 @@ bool TilesetEditor::replaceMetatile(uint16_t metatileId, const Metatile * src, Q
     this->metatile = dest;
     *this->metatile = *src;
     this->metatileSelector->select(metatileId);
-    this->metatileSelector->draw();
+    this->metatileSelector->drawMetatile(metatileId);
     this->metatileLayersItem->draw();
     this->metatileLayersItem->clearLastModifiedCoords();
     this->metatileLayersItem->clearLastHoveredCoords();
