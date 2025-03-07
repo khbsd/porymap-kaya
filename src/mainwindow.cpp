@@ -30,6 +30,8 @@
 #include "newlocationdialog.h"
 #include "message.h"
 
+#include "typeinfo"
+
 #include <QClipboard>
 #include <QDirIterator>
 #include <QStandardItemModel>
@@ -272,7 +274,7 @@ void MainWindow::initExtraSignals() {
     });
 
     connect(ui->comboBox_EncounterGroupArray, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index){
-        ui->stackedWidget_WildMons->setCurrentIndex(index);
+        editor->project->groupArrayData.currentGroupArrayIndex = index;
     });
 
     // Convert the layout of the map tools' frame into an adjustable FlowLayout

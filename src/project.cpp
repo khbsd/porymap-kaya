@@ -1722,9 +1722,9 @@ bool Project::readWildMonData() {
                     QString headerLabel;
                     for (iter = encArrayObj.begin(); iter != encArrayObj.end(); iter++) {
                         headerLabels.append(iter->first);
-                        // Saves the first label to use for later
-                        if (this->currentArrayMapGroup == NULL || counter == 0) {
-                            this->currentArrayMapGroup = headerLabels.at(counter);
+                        // Saves the first label index to use for later
+                        if (this->groupArrayData.currentGroupArrayIndex == NULL || counter == 0) {
+                            this->groupArrayData.currentGroupArrayIndex = counter;
                         }
                     }
                     

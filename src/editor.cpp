@@ -196,37 +196,47 @@ void Editor::clearWildMonTables() {
     }
 
     ui->comboBox_EncounterGroupLabel->clear();
+    ui->comboBox_EncounterGroupArray->clear();
+    if (project->usingGroupArrays)
+        project->groupArrayData.groupLabels.clear();
+
     emit wildMonTableClosed();
 }
 
-QString Editor::getWildMonDataLabel() {
-    QString noneGroup = "None";
-    if (project->currentArrayMapGroup == NULL) {
-        logInfo("noneLabel");
-        return noneGroup;
+int Editor::getWildMonDataLabelIndex() {
+    auto tempIndex = project->groupArrayData.currentGroupArrayIndex;
+    return tempIndex == NULL ? -1 : tempIndex;
+}
+
+void Editor::getGroupArrayLabels() {
+    project->groupArrayData.groupLabels.clear();
+
+    for (auto groupPair : project->wildMonDataArrayMap[map->constantName()]) {
+        for (auto groupPair_2 : groupPair.second.wildMonsMap) {
+            project->groupArrayData.groupLabels.append(groupPair_2.first);
+        }
     }
-    return project->currentArrayMapGroup;
 }
 
 void Editor::updateWildMonData() {
     Project::WildMonDataMap tempHeader;
-    QString headerLabel = getWildMonDataLabel();
+    int headerLabelIndex = getWildMonDataLabelIndex();
 
-    if (headerLabel == "None" || !project->usingGroupArrays) {
-        logInfo("none");
+    if (!project->usingGroupArrays || headerLabelIndex == -1) {
         tempHeader = project->wildMonData;
     } else {
-        // logInfo(map->constantName());
+        // logInfo(QString("%1").arg(project->groupArrayData.groupLabels.length()));
+        getGroupArrayLabels();
         for (auto groupPair : project->wildMonDataArrayMap[map->constantName()]) {
-            // logInfo(QString("key: %1").arg(groupPair.first));
-            // logInfo(QString("value: %1").arg(typeid(groupPair.second).name()));
             for (auto groupPair_2 : groupPair.second.wildMonsMap) {
                 // needs to test for data in header
                 // TODO: add "time_evening" and "time_night" encounter groups
                 // TODO: add switching
+
+                QString headerLabel = project->groupArrayData.groupLabels.at(headerLabelIndex);
                 if (groupPair_2.first.compare(headerLabel) == 0) {
-                    logInfo(QString("%1").arg(groupPair_2.first));
-                    logInfo(QString("%1").arg(headerLabel));
+                    // logInfo(QString("%1").arg(groupPair_2.first));
+                    // logInfo(QString("%1").arg(headerLabel));
                     project->wildMonData[map->constantName()].insert({ groupPair.first, groupPair_2.second });
                 }
             }
@@ -248,11 +258,11 @@ void Editor::displayWildMonTables() {
         labelCombo->addItem(groupPair.first);
 
     QComboBox *arrayCombo = ui->comboBox_EncounterGroupArray;
-    for (auto groupPair : project->wildMonDataArrayMap[map->constantName()]) {
-        for (auto groupPair_2 : groupPair.second.wildMonsMap) {
-            arrayCombo->addItem(groupPair_2.first);
-        }
+    for (QString groupLabel : project->groupArrayData.groupLabels) {
+        arrayCombo->addItem(groupLabel);
     }
+
+    logInfo("beep");
 
     labelCombo->setCurrentText(labelCombo->itemText(0));
     arrayCombo->setCurrentText(arrayCombo->itemText(0));
@@ -285,6 +295,7 @@ void Editor::displayWildMonTables() {
             emit wildMonTableOpened(getCurrentWildMonTable());
         });
     }
+    logInfo("beep2");
     stack->setCurrentIndex(0);
     emit wildMonTableOpened(getCurrentWildMonTable());
 }

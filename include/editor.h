@@ -179,7 +179,8 @@ public:
 
     bool selectingEvent = false;
 
-    QString getWildMonDataLabel();
+    void getGroupArrayLabels();
+    int getWildMonDataLabelIndex();
     void updateWildMonData();
 
     void deleteSelectedEvents();
